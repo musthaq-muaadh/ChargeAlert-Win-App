@@ -16,9 +16,26 @@ namespace ChargeAlert
         public bool PlugToasts { get; set; } = true;
         public bool QuietInFullscreen { get; set; } = true;
         public bool PopupBottomRight { get; set; } = false;
+        /// <summary>0 = battery percentage, 1 = app logo.</summary>
+        public int TrayIconStyle { get; set; } = 0;
+        /// <summary>How long short notices (plug / unplug, status) stay on screen.</summary>
+        public int ToastSeconds { get; set; } = 4;
 
-        static string FilePath => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChargeAlert", "settings.json");
+        /// <summary>Set during uninstall so nothing gets written back to disk afterwards.</summary>
+        public static bool SavingDisabled { get; set; }
+
+        public void ResetOptions()
+        {
+            var d = new Settings();
+            FullAt = d.FullAt; LowAt = d.LowAt; RemindMinutes = d.RemindMinutes;
+            Sound = d.Sound; PlugToasts = d.PlugToasts; QuietInFullscreen = d.QuietInFullscreen;
+            PopupBottomRight = d.PopupBottomRight; TrayIconStyle = d.TrayIconStyle; ToastSeconds = d.ToastSeconds;
+        }
+
+        static string FilePath => Path.Combine(Folder, "settings.json");
+
+        public static string Folder => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChargeAlert");
 
         public static Settings Load()
         {
@@ -33,9 +50,10 @@ namespace ChargeAlert
 
         public void Save()
         {
+            if (SavingDisabled) return;
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+                Directory.CreateDirectory(Folder);
                 File.WriteAllText(FilePath, JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true }));
             }
             catch { }

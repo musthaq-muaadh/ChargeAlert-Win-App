@@ -8,5 +8,13 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>ChargeAlert</AssemblyName>
     <RootNamespace>ChargeAlert</RootNamespace>
+    <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
+    <Product>ChargeAlert</Product>
+    <AssemblyTitle>ChargeAlert</AssemblyTitle>
+    <Version>1.1.0</Version>
   </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\logo.ico" />
+    <Resource Include="Assets\logo.png" />
+  </ItemGroup>
 </Project>

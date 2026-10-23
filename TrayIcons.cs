@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Drawing.Text;
 
@@ -6,6 +7,18 @@ namespace ChargeAlert
     /// <summary>Draws the battery percentage as the tray icon.</summary>
     static class TrayIcons
     {
+        /// <summary>The app logo as a tray icon.</summary>
+        public static Icon Logo()
+        {
+            try
+            {
+                var info = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/logo.ico"));
+                using var stream = info.Stream;
+                return new Icon(stream);
+            }
+            catch { return (Icon)SystemIcons.Application.Clone(); }
+        }
+
         public static Icon Make(int pct, bool charging, bool low)
         {
             using var bmp = new Bitmap(32, 32);

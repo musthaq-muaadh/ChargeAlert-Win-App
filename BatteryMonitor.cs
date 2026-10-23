@@ -25,7 +25,8 @@ namespace ChargeAlert
         bool _firstTick = true, _wasOnline, _noBatteryNotified;
         bool _fullShown, _lowShown;
         DateTime? _plugStart, _nextFullAlert;
-        int _lastPct = -1;
+        int _lastPct = -1, _lastStyle = -1;
+        SettingsWindow? _settingsWindow;
         bool _lastOnline, _lastLow;
 
         public BatteryMonitor()
@@ -166,7 +167,7 @@ namespace ChargeAlert
         {
             ClosePopup();
 
-            var p = new PopupWindow(icon, title, message, pct, accent, persistent, snooze, _s.PopupBottomRight);
+            var p = new PopupWindow(icon, title, message, pct, accent, persistent, snooze, _s.PopupBottomRight, _s.ToastSeconds);
             p.Dismissed += () => OnDismissed(kind);
             p.Snoozed += () => OnSnoozed(kind);
             p.Closed += (_, _) =>
@@ -202,11 +203,11 @@ namespace ChargeAlert
             string state = online ? (pct >= 100 ? "fully charged" : "charging") : "on battery" + RemainingText(ps);
             _tray.Text = Truncate($"Battery {pct}% - {state}", 63);
 
-            if (pct == _lastPct && online == _lastOnline && low == _lastLow) return;
-            _lastPct = pct; _lastOnline = online; _lastLow = low;
+            if (pct == _lastPct && online == _lastOnline && low == _lastLow && _s.TrayIconStyle == _lastStyle) return;
+            _lastPct = pct; _lastOnline = online; _lastLow = low; _lastStyle = _s.TrayIconStyle;
 
             var old = _tray.Icon;
-            _tray.Icon = TrayIcons.Make(pct, online, low);
+            _tray.Icon = _s.TrayIconStyle == 1 ? TrayIcons.Logo() : TrayIcons.Make(pct, online, low);
             old?.Dispose();
         }
 
@@ -214,38 +215,12 @@ namespace ChargeAlert
 
         WinForms.NotifyIcon BuildTray()
         {
-            var tray = new WinForms.NotifyIcon { Icon = System.Drawing.SystemIcons.Application, Text = "ChargeAlert", Visible = true };
+            var tray = new WinForms.NotifyIcon { Icon = TrayIcons.Logo(), Text = "ChargeAlert", Visible = true };
             var menu = new WinForms.ContextMenuStrip();
 
             menu.Items.Add("Show battery status", null, (_, _) => Application.Current.Dispatcher.Invoke(ShowStatus));
-            menu.Items.Add("Test full-charge popup", null, (_, _) => Application.Current.Dispatcher.Invoke(() =>
-            {
-                _fullShown = true;
-                ShowFull(Math.Max(_lastPct, 0));
-            }));
-            menu.Items.Add(new WinForms.ToolStripSeparator());
-
-            menu.Items.Add(Choice("Full-charge alert at", new[] { 80, 90, 100 },
-                v => $"{v}%", () => _s.FullAt, v => { _s.FullAt = v; _fullShown = false; }));
-
-            menu.Items.Add(Choice("Low-battery alert at", new[] { 0, 10, 15, 20, 30 },
-                v => v == 0 ? "Off" : $"{v}%", () => _s.LowAt, v => { _s.LowAt = v; _lowShown = false; }));
-
-            menu.Items.Add(Choice("Remind me while still plugged in", new[] { 0, 5, 10, 15, 30 },
-                v => v == 0 ? "Off" : $"every {v} min", () => _s.RemindMinutes, v => _s.RemindMinutes = v));
-
-            menu.Items.Add(Choice("Popup position", new[] { 0, 1 },
-                v => v == 0 ? "Top center" : "Bottom right", () => _s.PopupBottomRight ? 1 : 0, v => _s.PopupBottomRight = v == 1));
-
-            menu.Items.Add(new WinForms.ToolStripSeparator());
-            menu.Items.Add(Toggle("Play sound", () => _s.Sound, v => _s.Sound = v));
-            menu.Items.Add(Toggle("Notify when charger plugged / unplugged", () => _s.PlugToasts, v => _s.PlugToasts = v));
-            menu.Items.Add(Toggle("Stay quiet during fullscreen apps", () => _s.QuietInFullscreen, v => _s.QuietInFullscreen = v));
-
-            var startup = new WinForms.ToolStripMenuItem("Launch at startup") { CheckOnClick = true, Checked = IsStartupEnabled() };
-            startup.CheckedChanged += (_, _) => SetStartup(startup.Checked);
-            menu.Items.Add(startup);
-
+            menu.Items.Add("Settings…", null, (_, _) => Application.Current.Dispatcher.Invoke(() => OpenSettings()));
+            menu.Items.Add("Test full-charge popup", null, (_, _) => Application.Current.Dispatcher.Invoke(TestFullPopup));
             menu.Items.Add(new WinForms.ToolStripSeparator());
             menu.Items.Add("Exit", null, (_, _) =>
             {
@@ -255,6 +230,7 @@ namespace ChargeAlert
             });
 
             tray.ContextMenuStrip = menu;
+            tray.DoubleClick += (_, _) => Application.Current.Dispatcher.Invoke(() => OpenSettings());
             tray.MouseClick += (_, e) =>
             {
                 if (e.Button == WinForms.MouseButtons.Left) Application.Current.Dispatcher.Invoke(ShowStatus);
@@ -262,7 +238,7 @@ namespace ChargeAlert
             return tray;
         }
 
-        void ShowStatus()
+        internal void ShowStatus()
         {
             var ps = WinForms.SystemInformation.PowerStatus;
             if (ps.BatteryChargeStatus.HasFlag(WinForms.BatteryChargeStatus.NoSystemBattery)) return;
@@ -273,38 +249,13 @@ namespace ChargeAlert
             Show(PopupKind.Toast, online ? "🔌" : "🔋", $"Battery {pct}%", msg, pct, online ? Green : (pct <= 20 ? Red : Blue), false, false);
         }
 
-        WinForms.ToolStripMenuItem Choice(string title, int[] values, Func<int, string> label, Func<int> get, Action<int> set)
-        {
-            var root = new WinForms.ToolStripMenuItem(title);
-            foreach (var v in values)
-            {
-                int val = v;
-                var item = new WinForms.ToolStripMenuItem(label(val)) { Checked = get() == val };
-                item.Click += (_, _) =>
-                {
-                    set(val);
-                    _s.Save();
-                    foreach (WinForms.ToolStripMenuItem o in root.DropDownItems) o.Checked = o == item;
-                };
-                root.DropDownItems.Add(item);
-            }
-            return root;
-        }
-
-        WinForms.ToolStripMenuItem Toggle(string title, Func<bool> get, Action<bool> set)
-        {
-            var item = new WinForms.ToolStripMenuItem(title) { CheckOnClick = true, Checked = get() };
-            item.CheckedChanged += (_, _) => { set(item.Checked); _s.Save(); };
-            return item;
-        }
-
         const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-        static bool IsStartupEnabled()
+        internal static bool IsStartupEnabled()
         {
             using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RunKey);
             return k?.GetValue("ChargeAlert") != null;
         }
-        static void SetStartup(bool on)
+        internal static void SetStartup(bool on)
         {
             using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RunKey, true);
             if (k == null) return;
@@ -312,9 +263,45 @@ namespace ChargeAlert
             else k.DeleteValue("ChargeAlert", false);
         }
 
+        // ---------------- settings window hooks ----------------
+
+        public void OpenSettings(string? page = null)
+        {
+            if (_settingsWindow == null)
+            {
+                _settingsWindow = new SettingsWindow(_s, this);
+                _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+                _settingsWindow.Show();
+            }
+            if (page != null) _settingsWindow.ShowPage(page);
+            _settingsWindow.Activate();
+        }
+
+        internal void TestFullPopup()
+        {
+            _fullShown = true;
+            ShowFull(Math.Max(_lastPct, 0));
+        }
+
+        /// <summary>Lets the full / low alerts fire again after a threshold changed.</summary>
+        internal void ResetAlerts()
+        {
+            _fullShown = false;
+            _lowShown = false;
+            _nextFullAlert = null;
+        }
+
+        /// <summary>Re-applies options that change what is on screen (e.g. the tray icon style).</summary>
+        internal void ApplySettings()
+        {
+            _lastPct = -1;
+            Tick();
+        }
+
         public void Dispose()
         {
             _timer.Stop();
+            _settingsWindow?.Close();
             _tray.Visible = false;
             _tray.Dispose();
         }

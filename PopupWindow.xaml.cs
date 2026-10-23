@@ -18,7 +18,7 @@ namespace ChargeAlert
         public event Action? Snoozed;
 
         public PopupWindow(string icon, string title, string message, int percent, Color accent,
-                           bool persistent, bool showSnooze, bool bottomRight)
+                           bool persistent, bool showSnooze, bool bottomRight, double toastSeconds = 4)
         {
             InitializeComponent();
             _bottomRight = bottomRight;
@@ -37,7 +37,7 @@ namespace ChargeAlert
 
             if (!persistent)
             {
-                var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+                var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(Math.Max(1, toastSeconds)) };
                 t.Tick += (_, _) => { t.Stop(); CloseAnimated(); };
                 t.Start();
             }

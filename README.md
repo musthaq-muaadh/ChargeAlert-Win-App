@@ -1,51 +1,107 @@
-# ChargeAlert
+<div align="center">
 
-A small, lightweight Windows tray app that tells you when your laptop battery is
-full, so you can unplug the charger and keep your battery healthy.
+<img src="Assets/logo.png" alt="ChargeAlert logo" width="120" />
 
-When the battery reaches your chosen level, a popup slides in. It stays on screen
-until you unplug the charger, then it disappears automatically.
+# ChargeAlert 🔋
+
+**Stay Charged. Stay Informed.**
+
+A lightweight Windows system-tray app for battery monitoring, customizable charging alerts, and low-battery reminders.
+
+![Version](https://img.shields.io/badge/version-1.1.0-blue) ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6) ![Framework](https://img.shields.io/badge/.NET-8.0-512BD4)
+
+</div>
+
+## Overview
+
+ChargeAlert helps laptop users keep an eye on their battery without constantly checking the taskbar. Set a charging alert at 80%, 90%, or 100%, get a notification when your battery runs low, and see your battery percentage in the system tray.
+
+> **Note:** ChargeAlert sends notifications; it does **not** limit or stop charging at the selected percentage.
 
 ## Features
 
-- **Full-charge popup** that closes by itself when you unplug the charger
-- **Charge limit alerts** at 80%, 90% or 100% to help protect battery health
-- **Smart reminders** every 5/10/15/30 minutes if you leave the charger plugged in
-- **Snooze** the alert for 10 minutes or dismiss it
-- **Low-battery popup** at 10/15/20/30%, closes when you plug in
-- **Plug/unplug notifications** with estimated time remaining
-- **Live tray icon** showing the battery percentage (green when charging, red when low)
-- Shows how long the laptop was plugged in
-- Popup position: top center or bottom right
-- Optional sound alerts
-- Stays quiet while a fullscreen app or game is in front
-- Launch at startup
-- Settings saved automatically in `%AppData%\ChargeAlert\settings.json`
+- **Custom charge-level alerts:** Notify at 80%, 90%, or 100% battery.
+- **Full-charge popup:** Remains visible until you unplug, dismiss it, or snooze for 10 minutes.
+- **Charging duration:** See how long your laptop has been plugged in.
+- **Repeat reminders:** Choose 5, 10, 15, or 30 minutes, or disable reminders.
+- **Low-battery alerts:** Choose 10%, 15%, 20%, 30%, or off. Alerts close when charging begins.
+- **Charger connection notices:** Optional plug/unplug notifications.
+- **Live tray indicator:** Show battery percentage with charging/low-battery colors, or use the app logo.
+- **Fullscreen-aware notifications:** Stay quiet during fullscreen apps and games.
+- **Start with Windows:** Optional automatic startup.
+- **Custom appearance:** Configure popup placement and brief-notification duration.
+- **Uninstall controls:** Uninstall from the About screen, with an option to retain settings.
 
-## Requirements
+## Download and install
 
-- Windows 10 or 11 (laptop)
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+Open the repository's **Releases** page and download one of the available builds:
 
-## Run
+| File | Use case |
+| --- | --- |
+| `ChargeAlertSetup.exe` | Recommended Windows installer, if included in the release |
+| `ChargeAlert.exe` | Portable version, if included in the release |
 
-    dotnet run
+For the installer, run `ChargeAlertSetup.exe` and follow the prompts. For the portable version, place `ChargeAlert.exe` in a folder you control and launch it directly.
 
-## Build a single .exe
+**Requirements:** Windows 10 or 11 on a compatible battery-powered device. Self-contained release builds include the .NET runtime; building from source requires the .NET 8 SDK.
 
-    dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+## How to use
 
-The executable will be in `bin\Release\net8.0-windows\win-x64\publish\ChargeAlert.exe`.
+1. Launch ChargeAlert. It runs in the Windows system tray.
+2. Double-click the tray icon, or right-click it and choose **Settings**.
+3. Set your preferred charging threshold and low-battery warning level.
+4. Adjust reminders, notification preferences, and appearance as desired.
+5. Keep ChargeAlert running to receive alerts.
 
-## Usage
+## Settings
 
-Right-click the tray icon to change settings or use **Test full-charge popup**.
-Left-click the icon for a quick battery status.
+| Tab | Options |
+| --- | --- |
+| General | Startup, sounds, plug/unplug notices, fullscreen quiet mode, status and test popup |
+| Alerts | Charging threshold, low-battery threshold, reminder interval |
+| Appearance | Popup position, short-notice duration, tray icon style |
+| About | Settings folder, reset options, uninstall |
 
-## Tech
+Settings are stored in `%AppData%\ChargeAlert\settings.json`.
 
-C# · WPF · .NET 8 · Windows Forms (tray icon)
+## Build from source
+
+Requires Windows and the [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
+
+```powershell
+dotnet restore ChargeAlert.csproj
+dotnet run --project ChargeAlert.csproj
+```
+
+Publish a self-contained, single-file Windows x64 executable:
+
+```powershell
+dotnet publish ChargeAlert.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+Output: `bin\Release\net8.0-windows\win-x64\publish\ChargeAlert.exe`
+
+A Windows setup installer can be built separately using an installer tool such as Inno Setup; the source project alone does not generate `ChargeAlertSetup.exe`.
+
+## Uninstall
+
+Open **Settings → About → Uninstall ChargeAlert**. ChargeAlert can remove its startup entry and settings (unless you choose to keep them). If installed using a setup program, its installer-managed uninstaller is used instead.
+
+## Technology
+
+- C#
+- .NET 8
+- WPF (Windows Presentation Foundation)
+- Windows Forms integration for the system tray
+
+## Feedback and issues
+
+Found a bug or have an idea? Open an issue in this repository with your Windows version, ChargeAlert version, steps to reproduce, and relevant screenshots or error messages.
 
 ## License
 
-MIT
+No license is included in the uploaded project. Add a `LICENSE` file if you want to specify terms for reuse and contributions.
+
+---
+
+<div align="center"><strong>ChargeAlert — Stay Charged. Stay Informed.</strong></div>
